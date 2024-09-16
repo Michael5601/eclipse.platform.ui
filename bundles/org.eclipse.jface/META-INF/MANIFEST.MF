@@ -44,3 +44,6 @@ Import-Package: javax.xml.parsers,
  org.w3c.dom,
  org.xml.sax
 Automatic-Module-Name: org.eclipse.jface
+Bundle-ClassPath: libs/echosvg-all-2.0-SNAPSHOT-alldeps.jar,
+ .,
+ libs/jsvg-1.6.1.jar
