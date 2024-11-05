@@ -17,6 +17,7 @@
  *******************************************************************************/
 package org.eclipse.jface.resource;
 
+
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,6 +25,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.function.Supplier;
 
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.IAdaptable;
@@ -38,6 +40,10 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.ImageDataProvider;
 import org.eclipse.swt.graphics.ImageFileNameProvider;
+import org.eclipse.swt.graphics.ImageLoader;
+import org.eclipse.swt.internal.DPIUtil.ElementAtZoom;
+import org.eclipse.swt.internal.NativeImageLoader;
+import org.eclipse.swt.internal.image.FileFormat;
 
 /**
  * An ImageDescriptor that gets its information from a URL. This class is not
@@ -127,7 +133,7 @@ class URLImageDescriptor extends ImageDescriptor implements IAdaptable {
 	@Deprecated
 	@Override
 	public ImageData getImageData() {
-		return getImageData(getURL(url));
+		return getImageData(getURL(url), 100, 100);
 	}
 
 	@Override
@@ -138,12 +144,12 @@ class URLImageDescriptor extends ImageDescriptor implements IAdaptable {
 	private static ImageData getImageData(String url, int zoom) {
 		URL tempURL = getURL(url);
 		if (tempURL != null) {
-			if (zoom == 100) {
-				return getImageData(tempURL);
+			if (zoom == 100 || canLoadAtZoom(() -> getStream(tempURL), zoom)) {
+				return getImageData(tempURL, 100, zoom);
 			}
 			URL xUrl = getxURL(tempURL, zoom);
 			if (xUrl != null) {
-				ImageData xdata = getImageData(xUrl);
+				ImageData xdata = getImageData(xUrl, zoom, zoom);
 				if (xdata != null) {
 					return xdata;
 				}
@@ -152,28 +158,50 @@ class URLImageDescriptor extends ImageDescriptor implements IAdaptable {
 			if (xpath != null) {
 				URL xPathUrl = getURL(xpath);
 				if (xPathUrl != null) {
-					return getImageData(xPathUrl);
+					return getImageData(xPathUrl, zoom, zoom);
 				}
 			}
 		}
 		return null;
 	}
 
-	private static ImageData getImageData(URL url) {
-		ImageData result = null;
-		try (InputStream in = getStream(url)) {
-			if (in != null) {
-				result = new ImageData(in);
+	@SuppressWarnings("resource")
+	private static ImageData getImageData(URL url, int fileZoom, int targetZoom) {
+		return loadImageData(getStream(url), fileZoom, targetZoom);
+	}
+
+	static ImageData loadImageData(InputStream in, int fileZoom, int targetZoom) {
+		if (in != null) {
+			try (InputStream stream = new BufferedInputStream(in)) {
+				return loadImageFromStream(in, fileZoom, targetZoom);
+			} catch (SWTException e) {
+				if (e.code != SWT.ERROR_INVALID_IMAGE) {
+					throw e;
+					// fall through otherwise
+				}
+			} catch (IOException e) {
+				Policy.getLog().log(Status.error(e.getLocalizedMessage(), e));
 			}
-		} catch (SWTException e) {
-			if (e.code != SWT.ERROR_INVALID_IMAGE) {
-				throw e;
-				// fall through otherwise
+		}
+		return null;
+	}
+
+	@SuppressWarnings("restriction")
+	private static ImageData loadImageFromStream(InputStream stream, int fileZoom, int targetZoom) {
+		return NativeImageLoader.load(new ElementAtZoom<>(stream, fileZoom), new ImageLoader(), targetZoom).get(0)
+				.element();
+	}
+
+	@SuppressWarnings("restriction")
+	static boolean canLoadAtZoom(Supplier<InputStream> stream, int zoom) {
+		try (InputStream in = stream.get()) {
+			if (in != null) {
+				return FileFormat.canLoadAtZoom(new ElementAtZoom<>(in, 100), zoom);
 			}
 		} catch (IOException e) {
 			Policy.getLog().log(Status.error(e.getLocalizedMessage(), e));
 		}
-		return result;
+		return false;
 	}
 
 	/**
@@ -198,7 +226,7 @@ class URLImageDescriptor extends ImageDescriptor implements IAdaptable {
 					url = platformURL;
 				}
 			}
-			return new BufferedInputStream(url.openStream());
+			return url.openStream();
 		} catch (IOException e) {
 			if (InternalPolicy.DEBUG_LOG_URL_IMAGE_DESCRIPTOR_MISSING_2x) {
 				String path = url.getPath();
