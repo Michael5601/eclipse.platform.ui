@@ -40,6 +40,7 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.ImageDataProvider;
 import org.eclipse.swt.graphics.ImageFileNameProvider;
+import org.eclipse.swt.graphics.SVGRasterizer;
 
 /**
  * An ImageDescriptor that gets its information from a URL. This class is not
@@ -60,6 +61,13 @@ class URLImageDescriptor extends ImageDescriptor implements IAdaptable {
 		public String getImagePath(int zoom) {
 			URL tempURL = getURL(url);
 			if (tempURL != null) {
+				try {
+					if (SVGRasterizer.isSVGFile(tempURL)) {
+						return getFilePath(tempURL, false);
+					}
+				} catch (IOException e) {
+					// ignore.
+				}
 				final boolean logIOException = zoom == 100;
 				if (zoom == 100) {
 					return getFilePath(tempURL, logIOException);
@@ -166,18 +174,20 @@ class URLImageDescriptor extends ImageDescriptor implements IAdaptable {
 		} catch (SWTException e) {
 			// fall back to standard method
 		}
-
-//		try {
-//			getImageData(getURL(url));
-//		} catch (SWTException e) {
-//			// fall back to standard method
-//		}
+//	 	Implementation for later is standard implementation
 		return getImageData(url, zoom);
 	}
 
 	private static ImageData getImageData(String url, int zoom) {
 		URL tempURL = getURL(url);
 		if (tempURL != null) {
+			try {
+				if (SVGRasterizer.isSVGFile(tempURL)) {
+					return getImageData(tempURL);
+				}
+			} catch (IOException e) {
+				// ignore.
+			}
 			if (zoom == 100) {
 				return getImageData(tempURL);
 			}
