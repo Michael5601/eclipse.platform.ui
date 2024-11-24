@@ -794,7 +794,7 @@ public class IDEWorkbenchAdvisor extends WorkbenchAdvisor {
 						+ "quick_fix.png", false); //$NON-NLS-1$
 
 		declareWorkbenchImage(ideBundle, IDE.SharedImages.IMG_OBJ_PROJECT,
-				PATH_OBJECT + "prj_obj.png", true); //$NON-NLS-1$
+				PATH_OBJECT + "prj_obj.svg", true); //$NON-NLS-1$
 		declareWorkbenchImage(ideBundle,
 				IDE.SharedImages.IMG_OBJ_PROJECT_CLOSED, PATH_OBJECT
 						+ "cprj_obj.png", true); //$NON-NLS-1$
