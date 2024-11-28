@@ -173,7 +173,7 @@ class URLImageDescriptor extends ImageDescriptor implements IAdaptable {
 				}
 				tempSVGPath = tempSVGPath.replace(".png", ".svg"); //$NON-NLS-1$ //$NON-NLS-2$
 				try (InputStream stream = new FileInputStream(tempSVGPath)) {
-					return new ImageData(stream);
+					return new ImageData(stream, zoom);
 				} catch (IOException e) {
 					SWT.error(SWT.ERROR_IO, e);
 				}
@@ -193,7 +193,7 @@ class URLImageDescriptor extends ImageDescriptor implements IAdaptable {
 				try {
 					try (InputStream in = getStream(tempURL)) {
 						if (rasterizer.isSVGFile(in)) {
-							return getImageData(tempURL);
+							return getImageData(tempURL, zoom);
 						}
 					}
 				} catch (IOException e) {
@@ -201,11 +201,11 @@ class URLImageDescriptor extends ImageDescriptor implements IAdaptable {
 				}
 			}
 			if (zoom == 100) {
-				return getImageData(tempURL);
+				return getImageData(tempURL, zoom);
 			}
 			URL xUrl = getxURL(tempURL, zoom);
 			if (xUrl != null) {
-				ImageData xdata = getImageData(xUrl);
+				ImageData xdata = getImageData(xUrl, zoom);
 				if (xdata != null) {
 					return xdata;
 				}
@@ -214,7 +214,7 @@ class URLImageDescriptor extends ImageDescriptor implements IAdaptable {
 			if (xpath != null) {
 				URL xPathUrl = getURL(xpath);
 				if (xPathUrl != null) {
-					return getImageData(xPathUrl);
+					return getImageData(xPathUrl, zoom);
 				}
 			}
 		}
@@ -222,10 +222,14 @@ class URLImageDescriptor extends ImageDescriptor implements IAdaptable {
 	}
 
 	private static ImageData getImageData(URL url) {
+		return getImageData(url, 0);
+	}
+
+	private static ImageData getImageData(URL url, int zoom) {
 		ImageData result = null;
 		try (InputStream in = getStream(url)) {
 			if (in != null) {
-				result = new ImageData(in);
+				result = new ImageData(in, zoom);
 			}
 		} catch (SWTException e) {
 			if (e.code != SWT.ERROR_INVALID_IMAGE) {
