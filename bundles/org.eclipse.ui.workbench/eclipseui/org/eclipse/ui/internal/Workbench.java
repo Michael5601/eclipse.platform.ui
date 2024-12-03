@@ -568,7 +568,7 @@ public final class Workbench extends EventManager implements IWorkbench, org.ecl
 	 */
 	public static int createAndRunWorkbench(final Display display, final WorkbenchAdvisor advisor) {
 		final int[] returnCode = new int[1];
-		SVGRasterizer.register();
+		SVGRasterizer.intializeSVGRasterizer();
 		Realm.runWithDefault(DisplayRealm.getRealm(display), () -> {
 			boolean showProgress = PrefUtil.getAPIPreferenceStore()
 					.getBoolean(IWorkbenchPreferenceConstants.SHOW_PROGRESS_ON_STARTUP);
