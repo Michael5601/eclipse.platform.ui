@@ -105,9 +105,13 @@ class URLImageDescriptor extends ImageDescriptor implements IAdaptable {
 
 		@Override
 		public ImageData getImageData(int zoom) {
-			return URLImageDescriptor.getImageData(url, zoom);
+			return getImageData(zoom, 0);
 		}
 
+		@Override
+		public ImageData getImageData(int zoom, int flag) {
+			return URLImageDescriptor.getImageData(url, zoom, flag);
+		}
 	}
 
 	private static long cumulativeTime;
@@ -149,6 +153,10 @@ class URLImageDescriptor extends ImageDescriptor implements IAdaptable {
 	}
 
 	private static ImageData getImageData(String url, int zoom) {
+		return getImageData(url, zoom, 0);
+	}
+
+	private static ImageData getImageData(String url, int zoom, int flag) {
 		URL tempURL = getURL(url);
 		if (tempURL != null) {
 			ISVGRasterizer rasterizer = SVGRasterizerRegistry.getRasterizer();
@@ -156,7 +164,9 @@ class URLImageDescriptor extends ImageDescriptor implements IAdaptable {
 				try {
 					try (InputStream in = getStream(tempURL)) {
 						if (rasterizer.isSVGFile(in)) {
-							return getImageData(tempURL, zoom);
+							return getImageData(tempURL, zoom, flag);
+						} else if (flag != 0) {
+							return null;
 						}
 					}
 				} catch (IOException e) {
@@ -164,11 +174,11 @@ class URLImageDescriptor extends ImageDescriptor implements IAdaptable {
 				}
 			}
 			if (zoom == 100) {
-				return getImageData(tempURL, zoom);
+				return getImageData(tempURL, zoom, flag);
 			}
 			URL xUrl = getxURL(tempURL, zoom);
 			if (xUrl != null) {
-				ImageData xdata = getImageData(xUrl, zoom);
+				ImageData xdata = getImageData(xUrl, zoom, flag);
 				if (xdata != null) {
 					return xdata;
 				}
@@ -177,7 +187,7 @@ class URLImageDescriptor extends ImageDescriptor implements IAdaptable {
 			if (xpath != null) {
 				URL xPathUrl = getURL(xpath);
 				if (xPathUrl != null) {
-					return getImageData(xPathUrl, zoom);
+					return getImageData(xPathUrl, zoom, flag);
 				}
 			}
 		}
@@ -185,14 +195,14 @@ class URLImageDescriptor extends ImageDescriptor implements IAdaptable {
 	}
 
 	private static ImageData getImageData(URL url) {
-		return getImageData(url, 0);
+		return getImageData(url, 0, 0);
 	}
 
-	private static ImageData getImageData(URL url, int zoom) {
+	private static ImageData getImageData(URL url, int zoom, int flag) {
 		ImageData result = null;
 		try (InputStream in = getStream(url)) {
 			if (in != null) {
-				result = new ImageData(in, zoom);
+				result = new ImageData(in, zoom, flag);
 			}
 		} catch (SWTException e) {
 			if (e.code != SWT.ERROR_INVALID_IMAGE) {
