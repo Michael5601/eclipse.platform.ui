@@ -64,7 +64,7 @@ class URLImageDescriptor extends ImageDescriptor implements IAdaptable {
 				SVGRasterizer rasterizer = SVGRasterizerRegistry.getRasterizer();
 				if (rasterizer != null) {
 					try (InputStream in = getStream(tempURL)) {
-						if (rasterizer.isSVGFile(in)) {
+						if (rasterizer.isSVGFile((BufferedInputStream) in)) {
 							return getFilePath(tempURL, false);
 						}
 					} catch (IOException e) {
@@ -154,7 +154,7 @@ class URLImageDescriptor extends ImageDescriptor implements IAdaptable {
 			SVGRasterizer rasterizer = SVGRasterizerRegistry.getRasterizer();
 			if (rasterizer != null) {
 				try (InputStream in = getStream(tempURL)) {
-					if (rasterizer.isSVGFile(in)) {
+					if (rasterizer.isSVGFile((BufferedInputStream) in)) {
 						return getImageData(tempURL, zoom);
 					}
 				} catch (IOException e) {
