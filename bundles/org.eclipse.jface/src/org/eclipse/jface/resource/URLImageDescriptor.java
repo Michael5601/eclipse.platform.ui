@@ -18,6 +18,7 @@
 package org.eclipse.jface.resource;
 
 import java.io.BufferedInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -143,43 +144,43 @@ class URLImageDescriptor extends ImageDescriptor implements IAdaptable {
 
 	@Override
 	public ImageData getImageData(int zoom) {
-//		try {
-//			if (!(url.contains("error_co.svg") || url.contains("prj_obj.svg"))) { //$NON-NLS-1$ //$NON-NLS-2$
-//				String tempSVGPath = getFilePath(getURL(url), false).replace(".svg", ".png"); //$NON-NLS-1$ //$NON-NLS-2$
-//				if (tempSVGPath.contains("eclipse.platform.ui\\bundles")) { //$NON-NLS-1$
-//					tempSVGPath = tempSVGPath.replace("SWT-JDT-Platform\\git\\eclipse.platform.ui\\bundles", //$NON-NLS-1$
-//							"Bachelor\\IconStore\\original-svg"); //$NON-NLS-1$
-//				} else if (tempSVGPath.contains("eclipse.jdt.ui")) { //$NON-NLS-1$
-//					tempSVGPath = tempSVGPath.replace("SWT-JDT-Platform\\git\\eclipse.jdt.ui", //$NON-NLS-1$
-//							"Bachelor\\IconStore\\original-svg"); //$NON-NLS-1$
-//				} else if (tempSVGPath.contains("eclipse.platform\\debug")) { //$NON-NLS-1$
-//					tempSVGPath = tempSVGPath.replace("SWT-JDT-Platform\\git\\eclipse.platform\\debug", //$NON-NLS-1$
-//							"Bachelor\\IconStore\\original-svg"); //$NON-NLS-1$
-//				} else if (tempSVGPath.contains("eclipse.jdt.debug")) { //$NON-NLS-1$
-//					tempSVGPath = tempSVGPath.replace("SWT-JDT-Platform\\git\\eclipse.jdt.debug", //$NON-NLS-1$
-//							"Bachelor\\IconStore\\original-svg"); //$NON-NLS-1$
-//				} else if (tempSVGPath.contains("eclipse.platform\\ua")) { //$NON-NLS-1$
-//					tempSVGPath = tempSVGPath.replace("SWT-JDT-Platform\\git\\eclipse.platform\\ua", //$NON-NLS-1$
-//							"Bachelor\\IconStore\\original-svg"); //$NON-NLS-1$
-//				} else if (tempSVGPath.contains("eclipse.platform\\platform")) { //$NON-NLS-1$
-//					tempSVGPath = tempSVGPath.replace("SWT-JDT-Platform\\git\\eclipse.platform\\platform", //$NON-NLS-1$
-//							"Bachelor\\IconStore\\original-svg"); //$NON-NLS-1$
-//				} else {
-//					tempSVGPath = tempSVGPath.replace("SWT-JDT-Platform\\git\\", "Bachelor\\IconStore\\original-svg"); //$NON-NLS-1$ //$NON-NLS-2$
-//				}
-//				tempSVGPath = tempSVGPath.replace(".png", ".svg"); //$NON-NLS-1$ //$NON-NLS-2$
-//				try (InputStream stream = new FileInputStream(tempSVGPath)) {
-//					return new ImageData(stream);
-//				} catch (IOException e) {
-//					SWT.error(SWT.ERROR_IO, e);
-//				}
-//			}
-//		} catch (SWTException e) {
-//			// fall back to standard method
-//			}
+		try {
+			if (!(url.contains("error_co.svg") || url.contains("prj_obj.svg"))) { //$NON-NLS-1$ //$NON-NLS-2$
+				String tempSVGPath = getFilePath(getURL(url), false).replace(".svg", ".png"); //$NON-NLS-1$ //$NON-NLS-2$
+				if (tempSVGPath.contains("eclipse.platform.ui\\bundles")) { //$NON-NLS-1$
+					tempSVGPath = tempSVGPath.replace("SWT-JDT-Platform\\git\\eclipse.platform.ui\\bundles", //$NON-NLS-1$
+							"Bachelor\\IconStore\\original-svg"); //$NON-NLS-1$
+				} else if (tempSVGPath.contains("eclipse.jdt.ui")) { //$NON-NLS-1$
+					tempSVGPath = tempSVGPath.replace("SWT-JDT-Platform\\git\\eclipse.jdt.ui", //$NON-NLS-1$
+							"Bachelor\\IconStore\\original-svg"); //$NON-NLS-1$
+				} else if (tempSVGPath.contains("eclipse.platform\\debug")) { //$NON-NLS-1$
+					tempSVGPath = tempSVGPath.replace("SWT-JDT-Platform\\git\\eclipse.platform\\debug", //$NON-NLS-1$
+							"Bachelor\\IconStore\\original-svg"); //$NON-NLS-1$
+				} else if (tempSVGPath.contains("eclipse.jdt.debug")) { //$NON-NLS-1$
+					tempSVGPath = tempSVGPath.replace("SWT-JDT-Platform\\git\\eclipse.jdt.debug", //$NON-NLS-1$
+							"Bachelor\\IconStore\\original-svg"); //$NON-NLS-1$
+				} else if (tempSVGPath.contains("eclipse.platform\\ua")) { //$NON-NLS-1$
+					tempSVGPath = tempSVGPath.replace("SWT-JDT-Platform\\git\\eclipse.platform\\ua", //$NON-NLS-1$
+							"Bachelor\\IconStore\\original-svg"); //$NON-NLS-1$
+				} else if (tempSVGPath.contains("eclipse.platform\\platform")) { //$NON-NLS-1$
+					tempSVGPath = tempSVGPath.replace("SWT-JDT-Platform\\git\\eclipse.platform\\platform", //$NON-NLS-1$
+							"Bachelor\\IconStore\\original-svg"); //$NON-NLS-1$
+				} else {
+					tempSVGPath = tempSVGPath.replace("SWT-JDT-Platform\\git\\", "Bachelor\\IconStore\\original-svg"); //$NON-NLS-1$ //$NON-NLS-2$
+				}
+				tempSVGPath = tempSVGPath.replace(".png", ".svg"); //$NON-NLS-1$ //$NON-NLS-2$
+				try (InputStream stream = new FileInputStream(tempSVGPath)) {
+					return new ImageData(stream);
+				} catch (IOException e) {
+					SWT.error(SWT.ERROR_IO, e);
+				}
+			}
+		} catch (SWTException e) {
+			// fall back to standard method
+		}
 
 //	 	Implementation for later is standard implementation
-			return getImageData(url, zoom);
+		return getImageData(url, zoom);
 	}
 
 	private static ImageData getImageData(String url, int zoom) {
