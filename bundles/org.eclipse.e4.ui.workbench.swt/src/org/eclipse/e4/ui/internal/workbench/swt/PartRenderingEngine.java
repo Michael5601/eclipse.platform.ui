@@ -1154,6 +1154,7 @@ public class PartRenderingEngine implements IPresentationEngine {
 								return;
 							}
 							advisor.eventLoopIdle(display);
+							System.out.println("End time: " + System.currentTimeMillis());
 						}
 					} catch (ThreadDeath th) {
 						throw th;
