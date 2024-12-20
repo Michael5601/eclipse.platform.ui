@@ -175,6 +175,7 @@ public class IDEApplication implements IApplication, IExecutableExtension {
 			// N.B. createWorkbench remembers the advisor, and also registers
 			// the workbench globally so that all UI plug-ins can find it using
 			// PlatformUI.getWorkbench() or AbstractUIPlugin.getWorkbench()
+			System.out.println("Start-time: " + System.currentTimeMillis()); //$NON-NLS-1$
 			int returnCode = PlatformUI.createAndRunWorkbench(display,
 					new IDEWorkbenchAdvisor(processor));
 
