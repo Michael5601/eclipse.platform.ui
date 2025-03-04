@@ -35,10 +35,12 @@ import org.eclipse.jface.util.Policy;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
 import org.eclipse.swt.graphics.Device;
+import org.eclipse.swt.graphics.ElementAtZoom;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.ImageDataProvider;
 import org.eclipse.swt.graphics.ImageFileNameProvider;
+import org.eclipse.swt.graphics.ImageLoader;
 
 /**
  * An ImageDescriptor that gets its information from a URL. This class is not
@@ -66,16 +68,16 @@ class URLImageDescriptor extends ImageDescriptor implements IAdaptable {
 				if (zoom == 100) {
 					return getFilePath(tempURL, logIOException);
 				}
-				URL xUrl = getxURL(tempURL, zoom);
+				ElementAtZoom<URL> xUrl = getxURL(tempURL, zoom);
 				if (xUrl != null) {
-					String xResult = getFilePath(xUrl, logIOException);
+					String xResult = getFilePath(xUrl.element(), logIOException);
 					if (xResult != null) {
 						return xResult;
 					}
 				}
-				String xpath = FileImageDescriptor.getxPath(url, zoom);
+				ElementAtZoom<String> xpath = FileImageDescriptor.getxPath(url, zoom);
 				if (xpath != null) {
-					URL xPathUrl = getURL(xpath);
+					URL xPathUrl = getURL(xpath.element());
 					if (xPathUrl != null) {
 						return getFilePath(xPathUrl, logIOException);
 					}
@@ -131,7 +133,9 @@ class URLImageDescriptor extends ImageDescriptor implements IAdaptable {
 	@Deprecated
 	@Override
 	public ImageData getImageData() {
-		return getImageData(getURL(url));
+		// TODO What to do with this? targetZoom and fileZoom is unknown.
+		// the first can be extracted from the url but the latter?
+		return getImageData(getURL(url), 100, 100);
 	}
 
 	@Override
@@ -143,51 +147,34 @@ class URLImageDescriptor extends ImageDescriptor implements IAdaptable {
 		URL tempURL = getURL(url);
 		if (tempURL != null) {
 			if (tempURL.toString().endsWith(".svg")) { //$NON-NLS-1$
-				return getImageData(tempURL, zoom);
+				return getImageData(tempURL, zoom, zoom);
 			}
 			if (zoom == 100) {
-				return getImageData(tempURL);
+				return getImageData(tempURL, 100, zoom);
 			}
-			URL xUrl = getxURL(tempURL, zoom);
+			ElementAtZoom<URL> xUrl = getxURL(tempURL, zoom);
 			if (xUrl != null) {
-				ImageData xdata = getImageData(xUrl);
+				ImageData xdata = getImageData(xUrl.element(), xUrl.zoom(), zoom);
 				if (xdata != null) {
 					return xdata;
 				}
 			}
-			String xpath = FileImageDescriptor.getxPath(url, zoom);
+			ElementAtZoom<String> xpath = FileImageDescriptor.getxPath(url, zoom);
 			if (xpath != null) {
-				URL xPathUrl = getURL(xpath);
+				URL xPathUrl = getURL(xpath.element());
 				if (xPathUrl != null) {
-					return getImageData(xPathUrl);
+					return getImageData(xPathUrl, xpath.zoom(), zoom);
 				}
 			}
 		}
 		return null;
 	}
 
-	private static ImageData getImageData(URL url) {
+	private static ImageData getImageData(URL url, int fileZoom, int targetZoom) {
 		ImageData result = null;
 		try (InputStream in = getStream(url)) {
 			if (in != null) {
-				result = new ImageData(in);
-			}
-		} catch (SWTException e) {
-			if (e.code != SWT.ERROR_INVALID_IMAGE) {
-				throw e;
-				// fall through otherwise
-			}
-		} catch (IOException e) {
-			Policy.getLog().log(new Status(IStatus.ERROR, Policy.JFACE, e.getLocalizedMessage(), e));
-		}
-		return result;
-	}
-
-	private static ImageData getImageData(URL url, int zoom) {
-		ImageData result = null;
-		try (InputStream in = getStream(url)) {
-			if (in != null) {
-				result = new ImageData(in, zoom);
+				result = new ImageLoader().load(in, fileZoom, targetZoom).get(0).element();
 			}
 		} catch (SWTException e) {
 			if (e.code != SWT.ERROR_INVALID_IMAGE) {
@@ -250,7 +237,7 @@ class URLImageDescriptor extends ImageDescriptor implements IAdaptable {
 		return "URLImageDescriptor(" + url + ")"; //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
-	private static URL getxURL(URL url, int zoom) {
+	private static ElementAtZoom<URL> getxURL(URL url, int zoom) {
 		String path = url.getPath();
 		int dot = path.lastIndexOf('.');
 		if (dot != -1 && (zoom == 150 || zoom == 200)) {
@@ -265,7 +252,10 @@ class URLImageDescriptor extends ImageDescriptor implements IAdaptable {
 				if (url.getQuery() != null) {
 					file += '?' + url.getQuery();
 				}
-				return new URL(url.getProtocol(), url.getHost(), url.getPort(), file);
+				if (x == "@1.5x") { //$NON-NLS-1$
+					return new ElementAtZoom<>(new URL(url.getProtocol(), url.getHost(), url.getPort(), file), 150);
+				}
+				return new ElementAtZoom<>(new URL(url.getProtocol(), url.getHost(), url.getPort(), file), 200);
 			} catch (MalformedURLException e) {
 				Policy.getLog().log(new Status(IStatus.ERROR, Policy.JFACE, e.getLocalizedMessage(), e));
 			}

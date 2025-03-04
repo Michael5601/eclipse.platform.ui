@@ -36,9 +36,11 @@ import org.eclipse.jface.util.Policy;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
 import org.eclipse.swt.graphics.Device;
+import org.eclipse.swt.graphics.ElementAtZoom;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.ImageFileNameProvider;
+import org.eclipse.swt.graphics.ImageLoader;
 
 /**
  * An image descriptor that loads its image information from a file.
@@ -53,16 +55,16 @@ class FileImageDescriptor extends ImageDescriptor implements IAdaptable {
 			if (zoom == 100) {
 				return getFilePath(name, logIOException);
 			}
-			String xName = getxName(name, zoom);
+			ElementAtZoom<String> xName = getxName(name, zoom);
 			if (xName != null) {
-				String xResult = getFilePath(xName, logIOException);
+				String xResult = getFilePath(xName.element(), logIOException);
 				if (xResult != null) {
 					return xResult;
 				}
 			}
-			String xPath = getxPath(name, zoom);
+			ElementAtZoom<String> xPath = getxPath(name, zoom);
 			if (xPath != null) {
-				String xResult = getFilePath(xPath, logIOException);
+				String xResult = getFilePath(xPath.element(), logIOException);
 				if (xResult != null) {
 					return xResult;
 				}
@@ -123,10 +125,11 @@ class FileImageDescriptor extends ImageDescriptor implements IAdaptable {
 	 */
 	@Override
 	public ImageData getImageData(int zoom) {
-		InputStream in = getStream(zoom);
-		if (in != null) {
-			try (BufferedInputStream stream = new BufferedInputStream(in)) {
-				return new ImageData(stream, zoom);
+		ElementAtZoom<InputStream> inputStreamAtZoom = getStream(zoom);
+		if (inputStreamAtZoom != null) {
+			try (BufferedInputStream stream = new BufferedInputStream(inputStreamAtZoom.element())) {
+				ElementAtZoom<ImageData> imageData = new ImageLoader().load(stream, inputStreamAtZoom.zoom(), zoom).get(0);
+				return imageData.element();
 			} catch (SWTException e) {
 				if (e.code != SWT.ERROR_INVALID_IMAGE) {
 					throw e;
@@ -147,17 +150,17 @@ class FileImageDescriptor extends ImageDescriptor implements IAdaptable {
 	 * @return the buffered stream on the file or <code>null</code> if the
 	 *         file cannot be found
 	 */
-	private InputStream getStream(int zoom) {
+	private ElementAtZoom<InputStream> getStream(int zoom) {
 		if (zoom == 100) {
-			return getStream(name);
+			return getStream(new ElementAtZoom<>(name, 100));
 		}
 
-		InputStream xstream = getStream(getxName(name, zoom));
+		ElementAtZoom<InputStream> xstream = getStream(getxName(name, zoom));
 		if (xstream != null) {
 			return xstream;
 		}
 
-		InputStream xpath = getStream(getxPath(name, zoom));
+		ElementAtZoom<InputStream> xpath = getStream(getxPath(name, zoom));
 		if (xpath != null) {
 			return xpath;
 		}
@@ -173,13 +176,14 @@ class FileImageDescriptor extends ImageDescriptor implements IAdaptable {
 	 * @return an {@link InputStream} to read from, or <code>null</code> if fileName
 	 *         does not denotes an existing resource
 	 */
-	private InputStream getStream(String fileName) {
+	private ElementAtZoom<InputStream> getStream(ElementAtZoom<String> fileName) {
 		if (fileName != null) {
+			// TODO DO we need to close these?
 			if (location != null) {
-				return location.getResourceAsStream(fileName);
+				return new ElementAtZoom<>(location.getResourceAsStream(fileName.element()), fileName.zoom());
 			}
 			try {
-				return new FileInputStream(fileName);
+				return new ElementAtZoom<>(new FileInputStream(fileName.element()), fileName.zoom());
 			} catch (FileNotFoundException e) {
 				return null;
 			}
@@ -187,7 +191,7 @@ class FileImageDescriptor extends ImageDescriptor implements IAdaptable {
 		return null;
 	}
 
-	static String getxPath(String name, int zoom) {
+	static ElementAtZoom<String> getxPath(String name, int zoom) {
 		Matcher matcher = XPATH_PATTERN.matcher(name);
 		if (matcher.find()) {
 			try {
@@ -197,7 +201,8 @@ class FileImageDescriptor extends ImageDescriptor implements IAdaptable {
 				int desiredHeight = Math.round((zoom / 100f) * currentHeight);
 				String lead = name.substring(0, matcher.start(1));
 				String tail = name.substring(matcher.end(2));
-				return lead + desiredWidth + "x" + desiredHeight + tail; //$NON-NLS-1$
+				String xPath = lead + desiredWidth + "x" + desiredHeight + tail; //$NON-NLS-1$
+				return new ElementAtZoom<>(xPath, desiredHeight);
 			} catch (RuntimeException e) {
 				// should never happen but if then we can't use the alternative name...
 			}
@@ -205,7 +210,7 @@ class FileImageDescriptor extends ImageDescriptor implements IAdaptable {
 		return null;
 	}
 
-	static String getxName(String name, int zoom) {
+	static ElementAtZoom<String> getxName(String name, int zoom) {
 		int dot = name.lastIndexOf('.');
 		if (dot != -1 && (zoom == 150 || zoom == 200)) {
 			String lead = name.substring(0, dot);
@@ -213,8 +218,12 @@ class FileImageDescriptor extends ImageDescriptor implements IAdaptable {
 			if (InternalPolicy.DEBUG_LOAD_URL_IMAGE_DESCRIPTOR_2x_PNG_FOR_GIF && ".gif".equalsIgnoreCase(tail)) { //$NON-NLS-1$
 				tail = ".png"; //$NON-NLS-1$
 			}
-			String x = zoom == 150 ? "@1.5x" : "@2x"; //$NON-NLS-1$ //$NON-NLS-2$
-			return lead + x + tail;
+			String x = "@2x";//$NON-NLS-1$
+			if (zoom == 150) {
+				x = "@1.5x"; //$NON-NLS-1$
+				return new ElementAtZoom<>(lead + x + tail, 150);
+			}
+			return new ElementAtZoom<>(lead + x + tail, 200);
 		}
 		return null;
 	}
